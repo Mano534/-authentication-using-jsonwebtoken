@@ -1,3 +1,5 @@
 node_modules
 .env
 dist
+cryptography/privateKey.pem
+JWT/private.pem

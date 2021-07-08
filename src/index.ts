@@ -1,21 +1,26 @@
 // pake age imports
 import express ,{ErrorRequestHandler,Request,Response,NextFunction}from 'express';
+import passport from 'passport';
 import mongoose from 'mongoose';
 import session from 'express-session';
 import dotenv from 'dotenv';
 import mongo from 'connect-mongo';
 dotenv.config();
 // 
+
 // files imports
-import subscribersRouter from './routs/subscribers';
+import generalRouters from './routs/index'
 // 
 
 // clear console
 console.clear();
 // 
 
+
 // invoked varables
 const Mongo_url = process.env.DATABASE_CONECTION!;
+import'./config/database';
+
 const app = express();
 const sessionStore = new mongo({
     collectionName: "sessions",
@@ -31,16 +36,7 @@ app.use(express.json());
 
 
 
-// connection to database
-let connectionWithMongoose = mongoose.connect(Mongo_url,{ useNewUrlParser: true , useUnifiedTopology: true})
-const connection = mongoose.connection
-connection.on('error',(error)=>{
-    console.log(error)
-})
-connection.once('open',()=>{
-    console.log('connected to database')
-})
-// 
+
 // creating session 
 app.use(session({
     store:sessionStore,
@@ -54,21 +50,15 @@ app.use(session({
 // 
 
 
-
-
+// ------------ passport authentication ------------------ //
+import "./config/passport";
+app.use(passport.initialize());
+app.use(passport.session())
+// 
 
 
 // routes
-app.get('/',(req: any,res)=>{
-    if(req.session.viewCount){
-        req.session.viewCount++
-    }else{
-        req.session.viewCount = 1
-    }
-    console.log(req.session)
-    res.send('this page has been view'+ req.session.viewCount +' times')
-})
-// app.use('/subscribers',subscribersRouter)
+app.use('/',generalRouters  )
 // 
 // 
 
