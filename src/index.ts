@@ -1,10 +1,8 @@
 // pake age imports
 import express ,{ErrorRequestHandler,Request,Response,NextFunction}from 'express';
-import passport from 'passport';
 import mongoose from 'mongoose';
-import session from 'express-session';
 import dotenv from 'dotenv';
-import mongo from 'connect-mongo';
+import cors from 'cors';
 dotenv.config();
 // 
 
@@ -22,39 +20,18 @@ const Mongo_url = process.env.DATABASE_CONECTION!;
 import'./config/database';
 
 const app = express();
-const sessionStore = new mongo({
-    collectionName: "sessions",
-    mongoUrl:Mongo_url
-})
-// 
+
 // basic setup for express
 
 app.use(express.static('public'));
 app.use(express.urlencoded({extended: false}));
 app.use(express.json());
+app.use(cors())
 // 
 
 
 
 
-// creating session 
-app.use(session({
-    store:sessionStore,
-    secret: 'some secret',  //normally its stored in a environoment varable 
-    saveUninitialized: true,
-    resave: false,
-    cookie:{
-        maxAge:1000 * 60 * 60 * 24
-    }
-}))
-// 
-
-
-// ------------ passport authentication ------------------ //
-import "./config/passport";
-app.use(passport.initialize());
-app.use(passport.session())
-// 
 
 
 // routes

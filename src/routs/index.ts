@@ -1,40 +1,43 @@
 import {Router, Request,Response,NextFunction} from "express"
 let router = Router();
 import passport from 'passport';
-import { genPassword } from './../lib/passwordUtiles'
-import UserModel from './../config/database'
-import { isAuth } from './routsCustomMiddleWares'
+// import { isAuth } from './routsCustomMiddleWares';
+import {issueToken,validatePass,genPassword,authmiddleware} from './../lib/Utiles'
+import users from "./../module/users";
 /**
  * -------------- POST ROUTES ----------------
  */
 
  // TODO
- router.post('/login', passport.authenticate('local',{failureRedirect: '/login-failure',successRedirect: '/login-success'}));
-
- // TODO
- router.post('/register', (req, res, next) => {
-    let {password} = req.body ;
-    let {hash,salt} = genPassword(password);
-    let newUser = new UserModel({
-        userName : req.body.username,
-        salt,
-        hash, 
-    })
-    newUser.save()
-    .then((user:any)=>{
-        console.log(user)
-    })
-    res.redirect('/login');
+ router.post('/login', (req,res,next)=>{
+        users.findOne({userName:req.body.username})
+        .then(user=>{
+            if(!user){res.json({sucess:false,msg:'User Not Found'})}
+            let validate= validatePass(req.body.password,user.hash,user.salt);
+            if(validate){
+                let token = issueToken(user);
+                res.json({success:true,token:token.token,user,expiresIn:token.expires})
+            }else{
+                res.status(401).json({sucess:false,msg:'sorry you entered a wrong pass'})
+            }
+        })
+        .catch(err=>{
+            next(err)
+        })
  });
-
-
- /**
- * -------------- GET ROUTES ----------------
- */
-
-router.get('/', (req, res, next) => {
-    res.send('<h1>Home</h1><p>Please <a href="/register">register</a></p>');
+ router.post('/register', (req,res,next)=>{
+     let {hash,salt}=genPassword(req.body.password);
+    let newuser = new users({userName:req.body.username,hash,salt})
+    .save()
+    .then(user=>{
+        let token = issueToken(user);
+        res.json({success:true,token:token.token,user,expiresIn:token.expires})
+    })
+    .catch(err=>{
+        next(err)
+    })
 });
+ // TODO.
 
 // When you visit http://localhost:3000/login, you will see "Login Page"
 router.get('/login', (req, res, next) => {
@@ -66,10 +69,10 @@ router.get('/register', (req, res, next) => {
  * 
  * Also, look up what behaviour express session has without a maxage set
  */
-router.get('/protected-route',isAuth, (req, res, next) => {
-    
+router.get('/protected-route',authmiddleware, (req, res, next) => {
+    console.log((req as any).jwt);
     // This is how you check if a user is authenticated and protect a route.  You could turn this into a custom middleware to make it less redundant
-    res.send('your here yay!!')
+    res.json({sucess:true,msg:'your here yay!!'})
 });
 
 // Visiting this route logs the user out
